@@ -1,0 +1,315 @@
+
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <unistd.h>  // For usleep (Linux/Mac)
+#include <termios.h> // For terminal control
+#include <utility>    // For make_pair
+#include <chrono>
+#include <thread>
+#include <fstream>
+
+using namespace std;
+
+// Constants
+const int WIDTH = 30;
+const int HEIGHT = 20;
+const char SNAKE_HEAD = '@';  // Snake head symbol
+const char SNAKE_BODY = 'O';  // Snake body symbol
+const char FOOD = '*';
+const char EMPTY = ' ';
+
+// Directions
+enum Direction { UP, DOWN, LEFT, RIGHT };
+
+// Function to load the high score and time from a file
+pair<int, int> loadHighScore() {
+    ifstream file("highscore.txt");
+    int highScore = 0;
+    int highScoreTime = 0;
+    if (file.is_open()) {
+        file >> highScore >> highScoreTime;
+        file.close();
+    }
+    return make_pair(highScore, highScoreTime);  // Return as a pair (score, time)
+}
+
+// Function to save the high score and time to a file
+void saveHighScore(int highScore, int highScoreTime) {
+    ofstream file("highscore.txt");
+    if (file.is_open()) {
+        file << highScore << " " << highScoreTime;  // Store both high score and time
+        file.close();
+    }
+}
+
+class Snake {
+public:
+    Snake() {
+        // Initial position of the snake (starting at the center)
+        body.push_back(make_pair(WIDTH / 2, HEIGHT / 2));
+        body.push_back(make_pair(WIDTH / 2 - 1, HEIGHT / 2));
+        body.push_back(make_pair(WIDTH / 2 - 2, HEIGHT / 2));
+        direction = RIGHT;
+    }
+
+    void move() {
+        // Move the snake by adding a new head in the current direction and removing the tail
+        int x = body.front().first;
+        int y = body.front().second;
+
+        switch (direction) {
+            case UP:    y--; break;
+            case DOWN:  y++; break;
+            case LEFT:  x--; break;
+            case RIGHT: x++; break;
+        }
+
+        body.insert(body.begin(), make_pair(x, y));  // Insert a new head at the front
+        body.pop_back();  // Remove the last segment (tail)
+    }
+
+    void grow() {
+        // Grow the snake by adding a new head at the front, retaining the current head
+        int x = body.front().first;
+        int y = body.front().second;
+
+        switch (direction) {
+            case UP:    y--; break;
+            case DOWN:  y++; break;
+            case LEFT:  x--; break;
+            case RIGHT: x++; break;
+        }
+
+        body.insert(body.begin(), make_pair(x, y));  // Insert a new head
+    }
+
+    void changeDirection(Direction newDirection) {
+        if (direction == UP && newDirection != DOWN) direction = newDirection;
+        if (direction == DOWN && newDirection != UP) direction = newDirection;
+        if (direction == LEFT && newDirection != RIGHT) direction = newDirection;
+        if (direction == RIGHT && newDirection != LEFT) direction = newDirection;
+    }
+
+    bool collidesWithSelf() {
+        for (size_t i = 1; i < body.size(); ++i) {
+            if (body[0] == body[i]) return true;
+        }
+        return false;
+    }
+
+    bool collidesWithWall() {
+        return body[0].first < 0 || body[0].first >= WIDTH || body[0].second < 0 || body[0].second >= HEIGHT;
+    }
+
+    vector<pair<int, int> >& getBody() { return body; }
+    pair<int, int> getHead() { return body.front(); }
+    Direction getDirection() { return direction; }
+
+private:
+    vector<pair<int, int> > body;
+    Direction direction;
+};
+
+class Food {
+public:
+    Food(Snake& snake) : snake(snake) {
+        generateNewFood();
+    }
+
+    void generateNewFood() {
+        bool validPosition = false;
+        while (!validPosition) {
+            // Generate random food position
+            foodPosition = make_pair(rand() % (WIDTH - 2) + 1, rand() % (HEIGHT - 2) + 1);
+            validPosition = true;
+
+            // Ensure the food doesn't overlap with the snake's body
+            for (const auto& segment : snake.getBody()) {
+                if (segment == foodPosition) {
+                    validPosition = false;  // The food overlaps with the snake
+                    break;
+                }
+            }
+        }
+    }
+
+    pair<int, int> getPosition() { return foodPosition; }
+
+private:
+    Snake& snake;
+    pair<int, int> foodPosition;
+};
+
+// Function to get user input (non-blocking)
+char getInput() {
+    char buf = 0;
+    // Set terminal to non-canonical mode (no waiting for Enter)
+    struct termios old = {0};
+    if (tcgetattr(0, &old) < 0) {
+        perror ("tcsetattr()");
+        return -1;
+    }
+    struct termios current = old;
+    current.c_lflag &= ~ICANON;  // Disable canonical mode
+    current.c_lflag &= ~ECHO;    // Disable echoing characters
+    current.c_cc[VMIN] = 1;      // Wait for one character input
+    current.c_cc[VTIME] = 0;     // No timeout
+
+    tcsetattr(0, TCSANOW, &current); // Set terminal attributes
+
+    if (read(0, &buf, 1) < 0) {
+        buf = -1;
+    }
+
+    tcsetattr(0, TCSANOW, &old);  // Restore terminal attributes
+    return buf;
+}
+
+// Function to clear the screen in both macOS/Linux and Windows
+void clearScreen() {
+    // Clear the screen using escape sequence for Unix-based systems
+    cout << "\033[2J\033[1;1H";
+}
+
+void drawBoard(Snake& snake, Food& food, int score, int highScore, int elapsedTime) {
+    clearScreen();  // Clear the console screen
+
+    // Print the game grid
+    for (int i = 0; i < HEIGHT; ++i) {
+        for (int j = 0; j < WIDTH; ++j) {
+            if (i == 0 || i == HEIGHT - 1 || j == 0 || j == WIDTH - 1) {
+                cout << "#";  // Draw the border
+            } else if (make_pair(j, i) == food.getPosition()) {
+                cout << FOOD;  // Draw the food
+            } else {
+                bool snakePart = false;
+                for (size_t k = 0; k < snake.getBody().size(); ++k) {
+                    if (make_pair(j, i) == snake.getBody()[k]) {
+                        if (k == 0) {  // Head is the first element in body
+                            cout << SNAKE_HEAD;  // Draw the snake head
+                        } else {
+                            cout << SNAKE_BODY;  // Draw the snake body
+                        }
+                        snakePart = true;
+                        break;
+                    }
+                }
+                if (!snakePart) {
+                    cout << EMPTY;  // Empty space
+                }
+            }
+        }
+        cout << endl;
+    }
+
+    // Display the score, high score, and elapsed time on the top-right corner
+    cout << "Score: " << score << "  High Score: " << highScore << "  Time: " << elapsedTime / 1000.0 << "s" << endl;
+}
+
+bool restartGame() {
+    cout << "Game Over! Do you want to restart? (y/n): ";
+    char choice;
+    cin >> choice;
+    return choice == 'y' || choice == 'Y';
+}
+
+int main() {
+    srand(time(0));  // Seed for random number generation
+    pair<int, int> highScoreData = loadHighScore();  // Load the high score and time
+    int highScore = highScoreData.first;
+    int highScoreTime = highScoreData.second;
+
+    bool gameRunning = true;
+    int delay_ms = 100;  // Initialize delay in milliseconds (controls snake speed)
+
+    while (gameRunning) {
+        Snake snake;
+        Food food(snake);  // Pass the snake to the food to avoid overlap
+        int score = 0;
+        auto startTime = chrono::steady_clock::now();  // Start time
+
+        while (true) {
+            // Check if the snake's head is colliding with the wall before moving
+            if (snake.collidesWithWall()) {
+                auto endTime = chrono::steady_clock::now();  // End time
+                int elapsedTime = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();  // Elapsed time in milliseconds
+
+                cout << "Game Over! Final Score: " << score << endl;
+                cout << "Time Taken: " << elapsedTime / 1000.0 << "s" << endl;
+
+                // Update the high score and time if conditions met
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreTime = elapsedTime;
+                    saveHighScore(highScore, highScoreTime);  // Save the new high score and time
+                } else if (score == highScore && elapsedTime < highScoreTime) {
+                    highScoreTime = elapsedTime;  // Update the time if it's faster for the same score
+                    saveHighScore(highScore, highScoreTime);  // Save the updated time
+                }
+                break;
+            }
+
+            // Calculate elapsed time
+            auto currentTime = chrono::steady_clock::now();
+            int elapsedTime = chrono::duration_cast<chrono::milliseconds>(currentTime - startTime).count();  // Elapsed time in milliseconds
+
+            // Draw the game board with score and food
+            drawBoard(snake, food, score, highScore, elapsedTime);
+
+            // Handle input (keyboard press)
+            char key = getInput();
+            if (key != -1) {
+                if (key == 'w') snake.changeDirection(UP);
+                if (key == 's') snake.changeDirection(DOWN);
+                if (key == 'a') snake.changeDirection(LEFT);
+                if (key == 'd') snake.changeDirection(RIGHT);
+            }
+
+            // Move the snake
+            snake.move();
+
+            // Check if snake eats food
+            if (snake.getHead() == food.getPosition()) {
+                score += 10;  // Increase the score
+                snake.grow();  // Grow the snake
+                food.generateNewFood();  // Generate new food in a valid position
+            }
+
+            // Check for collisions with self
+            if (snake.collidesWithSelf()) {
+                auto endTime = chrono::steady_clock::now();  // End time
+                int elapsedTime = chrono::duration_cast<chrono::milliseconds>(endTime - startTime).count();  // Elapsed time in milliseconds
+
+                cout << "Game Over! Final Score: " << score << endl;
+                cout << "Time Taken: " << elapsedTime / 1000.0 << "s" << endl;
+
+                // Update the high score and time if conditions met
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreTime = elapsedTime;
+                    saveHighScore(highScore, highScoreTime);  // Save the new high score and time
+                } else if (score == highScore && elapsedTime < highScoreTime) {
+                    highScoreTime = elapsedTime;  // Update the time if it's faster for the same score
+                    saveHighScore(highScore, highScoreTime);  // Save the updated time
+                }
+                break;
+            }
+
+            // Increase difficulty after every 10 points
+            if (score % 10 == 0 && delay_ms > 50) {
+                delay_ms -= 10;  // Reduce delay, making the snake move faster
+            }
+
+            // Delay (game speed)
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));  // Sleep for the adjusted delay
+        }
+
+        // Ask if the player wants to restart
+        gameRunning = restartGame();
+    }
+
+    cout << "Thanks for playing!" << endl;
+    return 0;
+}
