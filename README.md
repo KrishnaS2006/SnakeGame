@@ -23,7 +23,7 @@ A fun, console-based **Snake** game implemented in **C++**! In this game, contro
 git clone https://github.com/yourusername/SnakeGame.git
 cd SnakeGame
 
-Compile and Run the Game
+###Compile and Run the Game
 For Windows:
 You can compile the program using MinGW or MSVC:
 
