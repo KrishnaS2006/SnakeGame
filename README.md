@@ -1,138 +1,127 @@
-# Snake Game
+# SnakeGame 🐍
 
-This is a classic Snake Game implemented in C++, where the player controls a snake to eat food and grow longer. The game includes features like customizable difficulty levels, a scoreboard for tracking the highest scores, and intuitive console-based gameplay.
+A fun, console-based **Snake** game implemented in **C++**! In this game, control a snake that eats food to grow longer and avoid crashing into walls or its own tail. It features multiple difficulty levels and high score tracking.
 
-## Table of Contents
+## Table of Contents 📚
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Compiling for Different Operating Systems](#compiling-for-different-operating-systems)
 - [Contributing](#contributing)
 - [License](#license)
-- [Data Structure Analysis](#data-structure-analysis)
-- [Features](#features)
 - [Badges](#badges)
-- [Screenshots](#screenshots)
-- [Conclusion](#conclusion)
+- [Data Structure Analysis](#data-structure-analysis)
 
-## Installation
+## Installation 🛠️
 
-To get started with the Snake Game, follow these steps:
+### Prerequisites
+- A **C++ compiler** (e.g., GCC or Clang)
+- **Windows** (for using `_kbhit()` and `_getch()`)
+- **Linux/macOS** (alternative key input handling may be required)
 
-### 1. Clone the Repository:
+### Clone the Repository:
 ```bash
-git clone https://github.com/yourusername/snake-game.git
+git clone https://github.com/yourusername/SnakeGame.git
+cd SnakeGame
 
-2. Navigate to the Project Directory:
-cd snake-game
-
-3. Install a C++ Compiler:
-Ensure you have a C++ compiler installed. On most systems, g++ is the default C++ compiler.
-
-Usage
-Once you've compiled the game, you can start playing the game via the terminal/command prompt.
-
-Start the Game: Once the game is compiled, you can run the executable.
-Controls: Use W, A, S, and D to move the snake. Press X to quit the game.
-Difficulty: Choose between Easy, Medium, or Hard difficulty levels.
-Score: Your score will increase as you eat food, and the snake grows longer. The high score will be displayed at the end of each game session.
-Compiling for Different Operating Systems
+Compile and Run the Game
 For Windows:
-Install MinGW (for GCC): You can download and install MinGW from here.
-Compile the Code: Open the Command Prompt in your project directory and run:
-bash
-Copy
-Edit
-g++ -o snake_game main.cpp
-Run the Game:
+You can compile the program using MinGW or MSVC:
 
-snake_game.exe
-For macOS and Linux:
-Install g++:
-macOS: Use Homebrew to install GCC:
+1.Using MinGW (GCC for Windows):
+g++ -o SnakeGame SnakeGame.cpp
 
-brew install gcc
-Linux: Install g++ using the following command:
-sudo apt install g++
-Compile the Code:
-bash
-Copy
-Edit
-g++ -o snake_game main.cpp
-Run the Game:
-bash
-Copy
-Edit
-./snake_game
-Contributing
-We welcome contributions! Here's how you can get involved:
+Then, run the game:
+SnakeGame.exe
+
+2.Using Visual Studio:
+
+Open the project in Visual Studio and build the solution.
+Run the SnakeGame.exe from the output directory.
+
+3.For Linux/macOS:
+Using GCC:
+g++ -o SnakeGame SnakeGame.cpp
+
+Run the game:
+clang++ -o SnakeGame SnakeGame.cpp
+
+Then, run:
+./SnakeGame
+
+Running the Game
+After compiling, you can run the game and enjoy playing!
+
+##Usage 🎮
+Game Controls:
+W: Move Up
+S: Move Down
+A: Move Left
+D: Move Right
+X: Quit the game
+
+Difficulty Levels:
+1) Easy
+2) Medium
+3) Hard
+Choose your difficulty at the start, and control the snake to grow longer as you eat the food (denoted by F). The goal is to avoid crashing into walls or your own tail!
+
+Scoring:
+You earn 10 points each time the snake eats food.
+The game ends if the snake hits the wall or its tail.
+The high score is updated whenever you beat your previous best.
+
+Game Over:
+When the game ends, you’ll be shown your final score and the high score. You can press R to restart the game or X to exit.
+
+##Contributing 🛠️
+We welcome contributions to enhance the game! Follow these steps to contribute:
 
 Fork the repository.
+Clone your fork to your local machine.
 Create a new branch:
-bash
-Copy
-Edit
 git checkout -b feature-name
-Make your changes.
-Commit your changes:
 
-git commit -m "Added a new feature"
-Push your branch:
-bash
-Copy
-Edit
+Make your changes, test them, and commit them.
+
+Push your changes:
 git push origin feature-name
-Create a pull request.
-We appreciate your contributions!
 
-License
-This project is licensed under the MIT License.
+Create a pull request for review.
+Feel free to suggest new features or improvements.
 
-Data Structure Analysis
-Data Structures Used:
-Arrays:
+##License 📄
+This project is licensed under the MIT License. You are free to use, modify, and distribute the code.
 
-tailX[] and tailY[]: Arrays are used to store the x and y coordinates of each segment of the snake’s body. As the snake grows, new body segments are added to these arrays, tracking the position of each segment.
-These arrays are dynamically updated every time the snake moves to a new position.
-Enum:
+##Data Structure Analysis 📊
 
-Direction Enum: The direction of the snake is managed using an enumeration to ensure clarity and type safety. The enum contains values for each of the four possible directions: UP, DOWN, LEFT, RIGHT, and STOP (which is used when the game ends).
-This makes it easy to check the direction and prevent the snake from moving in the opposite direction.
-Static Variables:
+Key Data Structures:
 
-highscore: This static variable tracks the highest score achieved in the game. It is updated each time the player finishes a game.
-score: Tracks the current score of the game, which increments as the snake eats food and grows in size.
-Primitives:
+1.Arrays for Snake's Tail:
 
-x and y: These variables track the position of the snake’s head.
-gameOver: A flag that indicates whether the game is over. It is set to true when the snake collides with the wall or itself.
-Object Structure:
-The game logic revolves around the snake's movement, and the key objects involved are:
-The Snake: Represented by the coordinates stored in arrays (tailX[], tailY[]) and controlled by the Direction enum.
-Food: Randomly placed on the game grid, and when the snake eats it, the score increases and the snake grows longer.
-Game Over Condition: If the snake's head collides with the boundaries of the game area or its own body, the game ends.
-Game Loop:
-Movement: The game updates the position of the snake based on the direction. If a segment of the snake collides with another segment or the wall, the game ends.
-Growth: As the snake eats food, a new segment is added to the snake’s body, and the game continues until the snake dies.
-Features
-Customizable Snake Design: Choose different characters for the snake’s head and body.
-Difficulty Levels: Adjust the speed of the snake for an easy, medium, or hard challenge.
-Score Tracking: Keep track of your current score and the highest score achieved.
-Console-based Gameplay: Play the game directly in the terminal or command prompt.
+tailX[] and tailY[] store the X and Y coordinates of the snake's body segments. These arrays are updated each time the snake moves, and they allow the game to track the snake's body as it grows.
+
+2.Enum for Direction:
+
+The Direction enum represents the four possible directions the snake can move: UP, DOWN, LEFT, and RIGHT. The game uses this enum to control movement.
+
+3.Game State Variables:
+
+x and y: Coordinates of the snake's head.
+foodX and foodY: Coordinates of the food item on the grid.
+score: The player's current score.
+highScore: The highest score achieved.
+tailLength: Length of the snake, starting at 3 and increasing when the snake eats food.
+
+4.Game Logic:
+
+The game loop continually updates the snake’s position, checks for collisions (with walls or the snake’s own body), and updates the score. The use of arrays and enums ensures efficient tracking of the snake’s body and direction, while the game state variables allow easy modification and retrieval of the game status.
+
+5.Recursive Food Spawning:
+
+The spawnFood() function ensures that the food does not appear on the snake's body by checking each segment of the snake's tail. If food spawns on the snake, it is relocated.
 
 
 
-
-
-
-
-
-
-
-
-
-
- 
 
 
 
